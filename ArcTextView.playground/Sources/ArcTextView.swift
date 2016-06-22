@@ -10,7 +10,7 @@ public class ArcTextView: UIView {
         return layer as! ArcTextLayer
     }
 
-    public var attributedText: NSAttributedString? {
+    public var attributedText: AttributedString? {
         get {
             return arcTextLayer.attributedText
         }
@@ -36,7 +36,7 @@ public class ArcTextView: UIView {
             arcTextLayer.radius = newValue
         }
     }
-    
+
     public var angle: CGFloat {
         get {
             return arcTextLayer.angle

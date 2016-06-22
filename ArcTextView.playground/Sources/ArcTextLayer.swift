@@ -4,17 +4,17 @@ import CoreText
 public class ArcTextLayer: CALayer {
 
     public enum Alignment {
-        case Start
-        case Center
-        case End
+        case start
+        case center
+        case end
     }
 
-    public var attributedText: NSAttributedString? {
+    public var attributedText: AttributedString? {
         didSet {
             setNeedsDisplay()
         }
     }
-    public var alignment: Alignment = .Start {
+    public var alignment: Alignment = .start {
         didSet {
             setNeedsDisplay()
         }
@@ -30,7 +30,7 @@ public class ArcTextLayer: CALayer {
         }
     }
 
-    override public func drawInContext(ctx: CGContext) {
+    override public func draw(in ctx: CGContext) {
         // Check pre-conditions
         guard radius > 0, let attributedText = attributedText else {
             return
@@ -42,29 +42,29 @@ public class ArcTextLayer: CALayer {
 
         let dimensions = calcurateGlyphDimensions(from: line, radius: radius)
 
-        CGContextSaveGState(ctx)
+        ctx.saveGState()
 
         // Initialize canvas position
-        CGContextTranslateCTM(ctx, bounds.width / 2, bounds.height / 2)
-        CGContextScaleCTM(ctx, -1, 1)
-        CGContextRotateCTM(ctx, CGFloat(M_PI))
+        ctx.translate(x: bounds.width / 2, y: bounds.height / 2)
+        ctx.scale(x: -1, y: 1)
+        ctx.rotate(byAngle: CGFloat(M_PI))
 
         // Adjust alignment
         let totalWidth = dimensions.map({ $0.width }).reduce(0, combine: +)
         let startAngle: CGFloat
         switch alignment {
-        case .Start:
+        case .start:
             startAngle = 0
-        case .Center:
+        case .center:
             startAngle = -(totalWidth / radius) / 2
-        case .End:
+        case .end:
             startAngle = -(totalWidth / radius)
         }
-        CGContextRotateCTM(ctx, -(startAngle + angle))
+        ctx.rotate(byAngle: -(startAngle + angle))
 
         // Draw glyphs
         var textPosition = CGPoint(x: 0, y: radius)
-        CGContextSetTextPosition(ctx, textPosition.x, textPosition.y)
+        ctx.setTextPosition(x: textPosition.x, y: textPosition.y)
         var glyphOffset = 0
         let runs = CTLineGetGlyphRuns(line) as NSArray as! [CTRun]
         for run in runs {
@@ -74,7 +74,7 @@ public class ArcTextLayer: CALayer {
                 let dimension = dimensions[glyphOffset + runGlyphIndex]
                 let glyphRange = CFRange(location: runGlyphIndex, length: 1)
 
-                CGContextRotateCTM(ctx, -dimension.angle)
+                ctx.rotate(byAngle: -dimension.angle)
 
                 let thisGlyphPosition = CGPoint(x: textPosition.x - dimension.width / 2, y: textPosition.y)
 
@@ -83,7 +83,7 @@ public class ArcTextLayer: CALayer {
                 var textMatrix = CTRunGetTextMatrix(run)
                 textMatrix.tx = thisGlyphPosition.x
                 textMatrix.ty = thisGlyphPosition.y
-                CGContextSetTextMatrix(ctx, textMatrix)
+                ctx.textMatrix = textMatrix
 
                 CTRunDraw(run, ctx, glyphRange)
             }
@@ -91,7 +91,7 @@ public class ArcTextLayer: CALayer {
             glyphOffset += runGlyphCount
         }
 
-        CGContextRestoreGState(ctx)
+        ctx.restoreGState()
     }
 
     private struct GlyphDimension {
@@ -112,7 +112,7 @@ public class ArcTextLayer: CALayer {
             }
         }
 
-        let glyphAngle = glyphWidth.enumerate().map { (index, width) -> CGFloat in
+        let glyphAngle = glyphWidth.enumerated().map { (index, width) -> CGFloat in
             let lastGlyphWidth: CGFloat = index > 0 ? glyphWidth[index - 1] : 0
             return (lastGlyphWidth + width) / 2 / radius
         }
